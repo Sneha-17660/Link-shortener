@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>URL Shortener</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="container">
+    <h1>URL Shortener</h1>
+    <input type="text" id="urlInput" placeholder="Enter your URL here">
+    <button id="shortenButton">Shorten</button>
+    <div id="result">
+      <input type="text" id="shortenedURL" readonly>
+      <button id="copyButton">Copy</button>
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.8/clipboard.min.js"></script>
+  <script src="scripts.js"></script>
+</body>
+</html>
+
+body {
+  font-family: Arial, sans-serif;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  background-color: #f0f0f0;
+}
+
+.container {
+  background-color: white;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  text-align: center;
+}
+
+input[type="text"] {
+  width: 80%;
+  padding: 10px;
+  margin: 10px 0;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+button {
+  padding: 10px 20px;
+  border: none;
+  background-color: #007BFF;
+  color: white;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+button:disabled {
+  background-color: #ccc;
+}
+
+#result {
+  display: none;
+  margin-top: 20px;
+}
+
+document.getElementById('shortenButton').addEventListener('click', async () => {
+  const urlInput = document.getElementById('urlInput').value;
+  if (!urlInput) {
+    alert('Please enter a URL');
+    return;
+  }
+
+  const response = await fetch('/shorten', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ url: urlInput })
+  });
+
+  const data = await response.json();
+  if (data.shortenedURL) {
+    document.getElementById('shortenedURL').value = data.shortenedURL;
+    document.getElementById('result').style.display = 'block';
+  } else {
+    alert('Error shortening URL');
+  }
+});
+
+new ClipboardJS('#copyButton').on('success', function(e) {
+  alert('Copied to clipboard');
+  e.clearSelection();
+});
+
+const express = require('express');
+const bodyParser = require('body-parser');
+const shortid = require('shortid');
+
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+const urlDatabase = {};
+
+app.use(bodyParser.json());
+app.use(express.static('public'));
+
+app.post('/shorten', (req, res) => {
+  const { url } = req.body;
+  const id = shortid.generate();
+  const shortenedURL = `http://localhost:${PORT}/${id}`;
+
+  urlDatabase[id] = url;
+
+  res.json({ shortenedURL });
+});
+
+app.get('/:id', (req, res) => {
+  const { id } = req.params;
+  const originalURL = urlDatabase[id];
+
+  if (originalURL) {
+    res.redirect(originalURL);
+  } else {
+    res.status(404).send('URL not found');
+  }
+});
+
+app.listen(PORT, () => {
+  console.log(`Server is running on http://localhost:${PORT}`);
+});
