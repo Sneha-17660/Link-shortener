@@ -1,0 +1,14 @@
+#Directory
+/url-shortener
+  ├── public
+  │   ├── index.html
+  │   ├── styles.css
+  │   └── scripts.js
+  ├── server.js
+  └── package.json
+
+npm init -y
+
+npm install express body-parser shortid
+
+node server.js
